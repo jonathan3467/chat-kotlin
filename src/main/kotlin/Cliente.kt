@@ -19,7 +19,7 @@ fun main() {
 
     val hilo = ClienteHilo(IN,OUT)
     hilo.start()
-    while (true){
+    while (hilo.isAlive){
         val mensajeEnviar = sn.next()
         OUT.writeUTF(mensajeEnviar)
     }
