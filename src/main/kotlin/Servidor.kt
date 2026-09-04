@@ -5,18 +5,17 @@ import java.net.ServerSocket
 fun main() {
     val puerto = 2300
     val sc = ServerSocket(puerto)
-    print("servidor iniciado \n")
+    val clientes = mutableListOf<ServidorHilo>()
+    println("servidor iniciado")
     while (true){
         val cliente = sc.accept()
         val IN = DataInputStream(cliente.getInputStream())
         val OUT = DataOutputStream(cliente.getOutputStream())
-
-        OUT.writeUTF("Indica tu nombre: ")
-        var nombreCliente = IN.readUTF()
-        var hilo = ServidorHilo(IN,OUT,nombreCliente)
+        var hilo = ServidorHilo(IN,OUT,clientes)
+        clientes.add(hilo)
         hilo.start()
 
-        print("creada la conexion con el cliente" + nombreCliente)
+        println("nueva conexion")
     }
 
 }

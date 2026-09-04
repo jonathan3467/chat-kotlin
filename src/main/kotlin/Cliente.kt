@@ -4,7 +4,7 @@ import java.net.Socket
 import java.util.Scanner
 
 fun main() {
-    var sn = Scanner(System.`in`)
+    val sn = Scanner(System.`in`)
     sn.useDelimiter("\n")
     val cliente = Socket("127.0.0.1", 2300)
     val IN = DataInputStream(cliente.getInputStream())
@@ -19,6 +19,8 @@ fun main() {
 
     val hilo = ClienteHilo(IN,OUT)
     hilo.start()
-    hilo.join()
-
+    while (true){
+        val mensajeEnviar = sn.next()
+        OUT.writeUTF(mensajeEnviar)
+    }
 }

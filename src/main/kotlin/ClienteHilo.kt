@@ -6,7 +6,9 @@ class ClienteHilo(
     private val OUT: DataOutputStream) : Thread() {
 
     override fun run() {
-
+    while(true){
+     val mensaje = IN.readUTF()
+     println(mensaje)
+        }
     }
-
 }
