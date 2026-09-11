@@ -1,5 +1,3 @@
-import java.io.DataInputStream
-import java.io.DataOutputStream
 import java.net.Socket
 import java.util.Scanner
 
@@ -7,20 +5,34 @@ fun main() {
     val sn = Scanner(System.`in`)
     sn.useDelimiter("\n")
     val cliente = Socket("127.0.0.1", 2300)
-    val IN = DataInputStream(cliente.getInputStream())
-    val OUT = DataOutputStream(cliente.getOutputStream())
+    val IN = cliente.getInputStream().bufferedReader(Charsets.UTF_8)
+    val OUT = cliente.getOutputStream().bufferedWriter(Charsets.UTF_8)
 
-    var mensaje = IN.readUTF()
-    print(mensaje)
+    print("Indica tu nombre: ")
     val nombre = sn.next()
-    OUT.writeUTF(nombre)
+    val identify = Identify(username = nombre)
+    val mensajeJson = JsonUtil.json.encodeToString(identify)
+    OUT.write(mensajeJson)
+    OUT.newLine()
+    OUT.flush()
 
-
-
-    val hilo = ClienteHilo(IN,OUT)
+    val hilo = ClienteHilo(IN)
     hilo.start()
     while (hilo.isAlive){
-        val mensajeEnviar = sn.next()
-        OUT.writeUTF(mensajeEnviar)
+        val texto = sn.next()
+        if (texto.equals("desconectar", ignoreCase = true)){
+            val disconnect = Disconnect()
+            val mensajeJson = JsonUtil.json.encodeToString(disconnect)
+            OUT.write(mensajeJson)
+            OUT.newLine()
+            OUT.flush()
+            break //lo hace salir del while para ya no mandar mensajes
+        }
+        val textoPublico = PublicText(text = texto)
+        val mensajeJson = JsonUtil.json.encodeToString(textoPublico)
+        OUT.write(mensajeJson)
+        OUT.newLine()
+        OUT.flush()
     }
+    cliente.close()
 }
