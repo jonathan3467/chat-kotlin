@@ -11,6 +11,11 @@ class ServidorHilo(
     private val verificar: Verificar) : Thread() {
     private var nombreCliente = ""
     private var identificado = false
+    private var estado = "ACTIVE"
+    // esto es como el static en java, para evitar crear uno para cada
+    companion object{
+        const val TAMANO_MAXIMO = 1024 * 1024
+    }
 
     override fun run() {
         try {
@@ -57,6 +62,16 @@ class ServidorHilo(
             while (true) {
                 val mensajeRecibido = IN.readLine() ?: break
                 println("<<<<<< $mensajeRecibido")
+
+                //checamos si el mensaje sobrepasa el tamaño maximo
+                val tamanoBytes = mensajeRecibido.toByteArray(Charsets.UTF_8).size
+                if(tamanoBytes > TAMANO_MAXIMO){
+                    val invalido = Response(operation = "INVALID", result = "INVALID")
+                    val mensaInvalido = JsonUtil.json.encodeToString(invalido)
+                    println(">>>>>>> $mensaInvalido")
+                    break //desconectamos al cliente
+                }
+
                 val json = JsonUtil.json.parseToJsonElement(mensajeRecibido)
                 val tipo = json.jsonObject["type"]?.jsonPrimitive?.content
 
@@ -70,6 +85,28 @@ class ServidorHilo(
                     }
                     "DISCONNECT" -> {
                         break
+                    }
+                    "STATUS" -> {
+                        val estadosValidos = setOf("ACTIVE", "AWAY", "BUSY")
+                        val statusMsg = try {
+                            JsonUtil.json.decodeFromString<Status>(mensajeRecibido)
+                        } catch (e: Exception){
+                            null
+                        }
+                        if(statusMsg == null || statusMsg.status !in estadosValidos){
+                            //para mensaje incompleto o que no se reconocio el estado,desconectamos
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                            break //sale del while y desconect al cliente
+                        } else if (statusMsg.status != estado){
+                            estado = statusMsg.status
+                            val newStatus = NewStatus(username = nombreCliente, status = estado)
+                            val mensajeNewStatus = JsonUtil.json.encodeToString(newStatus)
+                            println(">>>>>>>> $mensajeNewStatus")
+                            verificar.enviarMensajeExcepto(mensajeNewStatus,this)
+                        }
                     }
                     else -> {
                         println("Mensaje desconocido: $tipo")

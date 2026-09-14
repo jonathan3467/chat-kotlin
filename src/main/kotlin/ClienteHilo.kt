@@ -23,7 +23,8 @@ class ClienteHilo(
                         val respuesta = JsonUtil.json.decodeFromString<Response>(mensaje)
                         when(respuesta.result){
                             "SUCCESS" -> println("Conexion exitosa")
-                            "USER_ALREADY_EXISTS" -> println("El nombre '${respuesta.extra}' ya esta en uso, intenta con otro")
+                            "USER_ALREADY_EXISTS" -> println("El nombre '${respuesta.extra}' ya esta en uso, intenta con otro. ")
+                            "INVALID" -> println("Se paso del tamaño limite del mensaje o el mensaje era invalido, vas a ser desconectado. ")
                             else -> println("Respuesta del servidor: ${respuesta.operation} -> ${respuesta.result}")
                         }
                     }
@@ -41,6 +42,11 @@ class ClienteHilo(
                     "PUBLIC_TEXT_FROM" -> {
                         val msg = JsonUtil.json.decodeFromString<PublicTextFrom>(mensaje)
                         println("${msg.username}: ${msg.text}")
+                    }
+
+                    "NEW_STATUS" -> {
+                        val msg = JsonUtil.json.decodeFromString<NewStatus>(mensaje)
+                        println("${msg.username} cambio su estado a ${msg.status}")
                     }
                     else -> {
                         println("Mensaje desconocido")

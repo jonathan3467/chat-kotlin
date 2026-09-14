@@ -28,6 +28,16 @@ fun main() {
             OUT.flush()
             break //lo hace salir del while para ya no mandar mensajes
         }
+
+        if (texto.startsWith("estado", ignoreCase = true)){
+            val nuevoEstado = texto.substringAfter("estado ").trim().uppercase()
+            val status = Status(status = nuevoEstado)
+            val mensajeJson = JsonUtil.json.encodeToString(status)
+            OUT.write(mensajeJson)
+            OUT.newLine()
+            OUT.flush()
+            continue //para no mandarlo como texto publico
+        }
         val textoPublico = PublicText(text = texto)
         val mensajeJson = JsonUtil.json.encodeToString(textoPublico)
         OUT.write(mensajeJson)
