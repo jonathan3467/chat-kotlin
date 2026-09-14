@@ -69,6 +69,7 @@ class ServidorHilo(
                     val invalido = Response(operation = "INVALID", result = "INVALID")
                     val mensaInvalido = JsonUtil.json.encodeToString(invalido)
                     println(">>>>>>> $mensaInvalido")
+                    enviarMensaje(mensaInvalido)
                     break //desconectamos al cliente
                 }
 

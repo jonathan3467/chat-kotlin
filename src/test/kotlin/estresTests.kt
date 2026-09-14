@@ -70,4 +70,35 @@ class `estresTests` {
         cliente1.close()
         cliente2.close()
     }
+
+    @Test
+    fun mensajeDemasiadoGrande(){
+        val nombre = "Grandote_${Random.nextInt(100000,999999)}"
+        val cliente = Socket("127.0.0.1", 2300)
+        val IN = cliente.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUT = cliente.getOutputStream().bufferedWriter(Charsets.UTF_8)
+
+        //identificarse first
+        OUT.write(JsonUtil.json.encodeToString(Identify(username = nombre)))
+        OUT.newLine()
+        OUT.flush()
+        val respuestaIdentify = JsonUtil.json.decodeFromString<Response>(IN.readLine())
+        assertEquals("SUCCESS", respuestaIdentify.result)
+        // construit un texto de mas de 1 MB
+
+        val textoGigante = "A".repeat(1_100_000)
+        val mensajeGrande = PublicText(text = textoGigante)
+        val mensajeJson = JsonUtil.json.encodeToString(mensajeGrande)
+        println("Tamaño del mensaje a enviar: ${mensajeJson.toByteArray(Charsets.UTF_8).size} bytes")
+        OUT.write(mensajeJson)
+        OUT.newLine()
+        OUT.flush()
+
+        //El servidor debe de responder INVALID
+        val respuesta = JsonUtil.json.decodeFromString<Response>(IN.readLine())
+        println("Respuesta del servidor: $respuesta")
+        assertEquals("INVALID", respuesta.result)
+        assertEquals("INVALID", respuesta.operation)
+        cliente.close()
+    }
 }
