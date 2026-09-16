@@ -87,6 +87,13 @@ class ServidorHilo(
                     "DISCONNECT" -> {
                         break
                     }
+                    "USERS" -> {
+                        val listaUsuarios = verificar.obtenerListaUsuarios()
+                        val userList = UserList(users = listaUsuarios)
+                        val mensajeUserList = JsonUtil.json.encodeToString(userList)
+                        println(">>>>>>> $mensajeUserList")
+                        enviarMensaje(mensajeUserList)
+                    }
                     "STATUS" -> {
                         val estadosValidos = setOf("ACTIVE", "AWAY", "BUSY")
                         val statusMsg = try {
@@ -136,5 +143,9 @@ class ServidorHilo(
             // el socket del cliente ya no existe y
         // lo ignoramos silenciosamente sin ningun error de tuberia rota
         }
+    }
+
+    fun getEstado(): String {
+        return estado
     }
 }

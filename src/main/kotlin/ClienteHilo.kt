@@ -48,6 +48,14 @@ class ClienteHilo(
                         val msg = JsonUtil.json.decodeFromString<NewStatus>(mensaje)
                         println("${msg.username} cambio su estado a ${msg.status}")
                     }
+
+                    "USER_LIST" -> {
+                        val userList = JsonUtil.json.decodeFromString<UserList>(mensaje)
+                        println("Usuarios conectados:")
+                        for((nombre, estadoUsuario) in userList.users){
+                            println(" $nombre: $estadoUsuario")
+                        }
+                    }
                     else -> {
                         println("Mensaje desconocido")
                     }

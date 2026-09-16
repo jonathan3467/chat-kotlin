@@ -29,4 +29,13 @@ class Verificar {
     fun eliminaUsuario(nombre: String){
         usuarios.remove(nombre)
     }
+
+    @Synchronized
+    fun obtenerListaUsuarios(): Map<String, String>{
+        val lista = mutableMapOf<String, String>()
+        for((nombre, hilo) in usuarios){
+            lista[nombre] = hilo.getEstado()
+        }
+        return lista
+    }
 }

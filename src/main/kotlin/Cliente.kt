@@ -38,6 +38,16 @@ fun main() {
             OUT.flush()
             continue //para no mandarlo como texto publico
         }
+
+        if (texto.equals("usuarios", ignoreCase = true)){
+            val users = Users()
+            val mensajeJson = JsonUtil.json.encodeToString(users)
+            OUT.write(mensajeJson)
+            OUT.newLine()
+            OUT.flush()
+            continue
+        }
+
         val textoPublico = PublicText(text = texto)
         val mensajeJson = JsonUtil.json.encodeToString(textoPublico)
         OUT.write(mensajeJson)

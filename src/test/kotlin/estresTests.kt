@@ -101,4 +101,57 @@ class `estresTests` {
         assertEquals("INVALID", respuesta.operation)
         cliente.close()
     }
+
+    @Test
+    fun listaDeUsuarios() {
+        //que se conecten 3 usuarios de prueba
+        val nombre1 = "ListaA_${Random.nextInt(100000,999999)}"
+        val nombre2 = "ListaB_${Random.nextInt(100000,999999)}"
+        val nombre3 = "ListaC_${Random.nextInt(100000,999999)}"
+
+        val cliente1 = Socket("127.0.0.1", 2300)
+        val IN1 = cliente1.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUT1 = cliente1.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUT1.write(JsonUtil.json.encodeToString(Identify(username = nombre1)))
+        OUT1.newLine(); OUT1.flush()
+        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN1.readLine()).result)
+
+        val cliente2 = Socket("127.0.0.1", 2300)
+        val IN2 = cliente2.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUT2 = cliente2.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUT2.write(JsonUtil.json.encodeToString(Identify(username = nombre2)))
+        OUT2.newLine(); OUT2.flush()
+        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN2.readLine()).result)
+        IN1.readLine() // el cliente 1 recibe el NEW_USER de cliente2 el cual lo ignoramos aqui
+
+        val cliente3 = Socket("127.0.0.1", 2300)
+        val IN3 = cliente3.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUT3 = cliente3.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUT3.write(JsonUtil.json.encodeToString(Identify(username = nombre3)))
+        OUT3.newLine(); OUT3.flush()
+        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN3.readLine()).result)
+        IN1.readLine() //cliente1 recibe el NEW_USER de cliente3
+        IN2.readLine() //cliente 2 recibe NEW_USER de cliente3
+
+        //cliente2 cambia su estado a AWAY
+        OUT2.write(JsonUtil.json.encodeToString(Status(status = "AWAY")))
+        OUT2.newLine(); OUT2.flush()
+        // cliente1 y el 3 reciben el NEW_status del cliemte 2
+        IN1.readLine()
+        IN3.readLine()
+
+        //cliemte 1 pide la lista de usuarios
+        OUT1.write(JsonUtil.json.encodeToString(Users()))
+        OUT1.newLine(); OUT1.flush()
+
+        val respuesta = JsonUtil.json.decodeFromString<UserList>(IN1.readLine())
+        println("Lista recibida: ${respuesta.users}")
+        assertEquals("ACTIVE",respuesta.users[nombre1])
+        assertEquals("AWAY",respuesta.users[nombre2])
+        assertEquals("ACTIVE",respuesta.users[nombre3])
+
+        cliente1.close()
+        cliente2.close()
+        cliente3.close()
+    }
 }
