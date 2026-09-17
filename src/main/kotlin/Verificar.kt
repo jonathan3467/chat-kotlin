@@ -38,4 +38,11 @@ class Verificar {
         }
         return lista
     }
+
+    @Synchronized
+    fun enviarMnesajeAUsuario(nombreDestino: String, mensaje: String): Boolean{
+        val hiloDestino = usuarios[nombreDestino] ?: return false
+        hiloDestino.enviarMensaje(mensaje)
+        return true
+    }
 }

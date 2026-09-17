@@ -48,6 +48,23 @@ fun main() {
             continue
         }
 
+        if (texto.startsWith("privado ", ignoreCase = true)){
+            val resto = texto.substringAfter("privado ").trim()
+            val partes = resto.split(" ", limit = 2)
+            if(partes.size == 2){
+                val destinatario = partes[0]
+                val textoPrivado = partes[1]
+                val textMsg = Text(username = destinatario, text = textoPrivado)
+                val mensajeJson = JsonUtil.json.encodeToString(textMsg)
+                OUT.write(mensajeJson)
+                OUT.newLine()
+                OUT.flush()
+            } else{
+                println("Uso: privado <usuario> <mensaje>")
+            }
+            continue
+        }
+
         val textoPublico = PublicText(text = texto)
         val mensajeJson = JsonUtil.json.encodeToString(textoPublico)
         OUT.write(mensajeJson)

@@ -25,6 +25,7 @@ class ClienteHilo(
                             "SUCCESS" -> println("Conexion exitosa")
                             "USER_ALREADY_EXISTS" -> println("El nombre '${respuesta.extra}' ya esta en uso, intenta con otro. ")
                             "INVALID" -> println("Se paso del tamaño limite del mensaje o el mensaje era invalido, vas a ser desconectado. ")
+                            "NO_SUCH_USER" -> println("el usuario '${respuesta.extra}' no existe")
                             else -> println("Respuesta del servidor: ${respuesta.operation} -> ${respuesta.result}")
                         }
                     }
@@ -56,6 +57,12 @@ class ClienteHilo(
                             println(" $nombre: $estadoUsuario")
                         }
                     }
+
+                    "TEXT_FROM" -> {
+                        val msg = JsonUtil.json.decodeFromString<TextFrom>(mensaje)
+                        println("[privado] ${msg.username}: ${msg.text}")
+                    }
+
                     else -> {
                         println("Mensaje desconocido")
                     }

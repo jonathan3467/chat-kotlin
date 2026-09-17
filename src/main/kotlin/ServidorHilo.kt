@@ -84,9 +84,11 @@ class ServidorHilo(
                         println(">>>>>> $mensajeAEnviar")
                         verificar.enviarMensajeExcepto(JsonUtil.json.encodeToString(publicTextFrom),this)
                     }
+
                     "DISCONNECT" -> {
                         break
                     }
+
                     "USERS" -> {
                         val listaUsuarios = verificar.obtenerListaUsuarios()
                         val userList = UserList(users = listaUsuarios)
@@ -94,6 +96,7 @@ class ServidorHilo(
                         println(">>>>>>> $mensajeUserList")
                         enviarMensaje(mensajeUserList)
                     }
+
                     "STATUS" -> {
                         val estadosValidos = setOf("ACTIVE", "AWAY", "BUSY")
                         val statusMsg = try {
@@ -114,6 +117,22 @@ class ServidorHilo(
                             val mensajeNewStatus = JsonUtil.json.encodeToString(newStatus)
                             println(">>>>>>>> $mensajeNewStatus")
                             verificar.enviarMensajeExcepto(mensajeNewStatus,this)
+                        }
+                    }
+
+                    "TEXT" -> {
+                        val textMsg = JsonUtil.json.decodeFromString<Text>(mensajeRecibido)
+                        val textFrom = TextFrom(username = nombreCliente, text = textMsg.text)
+                        val mensajeTextFrom = JsonUtil.json.encodeToString(textFrom)
+
+                        val existe = verificar.enviarMnesajeAUsuario(textMsg.username, mensajeTextFrom)
+                        if(!existe){
+                            val respuesta = Response(operation = "TEXT", result = "NO_SUCH_USER", extra = textMsg.username)
+                            val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                            println(">>>>>>> $mensajeRespuesta")
+                            enviarMensaje(mensajeRespuesta)
+                        } else {
+                            println(">>>>>> $mensajeTextFrom")
                         }
                     }
                     else -> {
