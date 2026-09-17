@@ -6,3 +6,10 @@ data class Text(
     val username: String,
     val text: String
 )
+
+@Serializable
+data class TextFrom(
+    val type: String = "TEXT_FROM",
+    val username: String,
+    val text: String
+)
