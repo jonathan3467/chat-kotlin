@@ -154,4 +154,65 @@ class `estresTests` {
         cliente2.close()
         cliente3.close()
     }
+
+    @Test    //haremos dos uno para el caso que si exita el usuario, y el segundo en caso de que no
+    fun mensajePrivadoExitoso(){
+        val nombreA = "PrivA_${Random.nextInt(100000,999999)}"
+        val nombreB = "PrivB_${Random.nextInt(100000,999999)}"
+
+        val clienteA = Socket("127.0.0.1", 2300)
+        val INa = clienteA.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUTa = clienteA.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUTa.write(JsonUtil.json.encodeToString(Identify(username = nombreA)))
+        OUTa.newLine(); OUTa.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INa.readLine()).result)
+
+        val clienteB = Socket("127.0.0.1", 2300)
+        val INb = clienteB.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUTb = clienteB.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUTb.write(JsonUtil.json.encodeToString(Identify(username = nombreB)))
+        OUTb.newLine(); OUTb.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INb.readLine()).result)
+        INa.readLine() //A recibe el NEW_USER de B
+
+        // A le manda un texto privado a B
+        val texto = "Hola B, estes es un mensaje privado"
+        val textMsg = Text(username = nombreB, text = texto)
+        OUTa.write(JsonUtil.json.encodeToString(textMsg))
+        OUTa.newLine(); OUTa.flush()
+
+        // B debe de recibir el TEXT_FROM
+        val recibido = JsonUtil.json.decodeFromString<TextFrom>(INb.readLine())
+        println("B recibio: $recibido")
+        assertEquals(nombreA, recibido.username)
+        assertEquals(texto,recibido.text)
+        clienteA.close()
+        clienteB.close()
+    }
+
+    @Test
+    fun mensajePrivadoAUsuarioInexistente(){
+        val nombreA = "PrivC_${Random.nextInt(100000,999999)}"
+        val destinoFalso = "NoExiste_${Random.nextInt(100000,999999)}"
+
+        val clienteA = Socket("127.0.0.1", 2300)
+        val INa = clienteA.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUTa = clienteA.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUTa.write(JsonUtil.json.encodeToString(Identify(username = nombreA)))
+        OUTa.newLine(); OUTa.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INa.readLine()).result)
+
+        //A intenta mndarle un texto privado a alguien que no existe
+        val textMsg = Text(username = destinoFalso, text = "hola?")
+        OUTa.write(JsonUtil.json.encodeToString(textMsg))
+        OUTa.newLine(); OUTa.flush()
+
+        //El servidro debe de responer NO_SUCH_USER
+        val respuesta = JsonUtil.json.decodeFromString<Response>(INa.readLine())
+        println("Respuesta: $respuesta")
+        assertEquals("TEXT",respuesta.operation)
+        assertEquals("NO_SUCH_USER", respuesta.result)
+        assertEquals(destinoFalso, respuesta.extra)
+        clienteA.close()
+    }
 }
