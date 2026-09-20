@@ -20,7 +20,7 @@ fun main() {
     hilo.start()
     while (hilo.isAlive){
         val texto = sn.next()
-        if (texto.equals("desconectar", ignoreCase = true)){
+        if (texto.equals("<desconectar>", ignoreCase = true)){
             val disconnect = Disconnect()
             val mensajeJson = JsonUtil.json.encodeToString(disconnect)
             OUT.write(mensajeJson)
@@ -29,8 +29,8 @@ fun main() {
             break //lo hace salir del while para ya no mandar mensajes
         }
 
-        if (texto.startsWith("estado", ignoreCase = true)){
-            val nuevoEstado = texto.substringAfter("estado ").trim().uppercase()
+        if (texto.startsWith("<estado>", ignoreCase = true)){
+            val nuevoEstado = texto.substringAfter("<estado>").trim().uppercase()
             val status = Status(status = nuevoEstado)
             val mensajeJson = JsonUtil.json.encodeToString(status)
             OUT.write(mensajeJson)
@@ -39,7 +39,7 @@ fun main() {
             continue //para no mandarlo como texto publico
         }
 
-        if (texto.equals("usuarios", ignoreCase = true)){
+        if (texto.equals("<usuarios>", ignoreCase = true)){
             val users = Users()
             val mensajeJson = JsonUtil.json.encodeToString(users)
             OUT.write(mensajeJson)
@@ -48,8 +48,8 @@ fun main() {
             continue
         }
 
-        if (texto.startsWith("privado ", ignoreCase = true)){
-            val resto = texto.substringAfter("privado ").trim()
+        if (texto.startsWith("<privado>", ignoreCase = true)){
+            val resto = texto.substringAfter("<privado>").trim()
             val partes = resto.split(" ", limit = 2)
             if(partes.size == 2){
                 val destinatario = partes[0]
@@ -60,7 +60,7 @@ fun main() {
                 OUT.newLine()
                 OUT.flush()
             } else{
-                println("Uso: privado <usuario> <mensaje>")
+                println("Uso: <privado> usuario mensaje")
             }
             continue
         }

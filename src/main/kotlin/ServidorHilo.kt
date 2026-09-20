@@ -28,6 +28,16 @@ class ServidorHilo(
             val identify = JsonUtil.json.decodeFromString<Identify>(mensaje)
             val nombreSolicitado = identify.username
 
+            //checamos si su nombre no se pasa de 8 caracteres
+            if (nombreSolicitado.length > 8){
+                val invalido = Response(operation = "INVALID", result = "INVALID")
+                val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                println(">>>>>>> $mensajeInvalido")
+                enviarMensaje(mensajeInvalido)
+                socket.close()
+                return
+            }
+
             try {
                 verificar.agregarUsuario(nombreSolicitado, this)
             } catch (e: Exception) {

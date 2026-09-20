@@ -12,7 +12,7 @@ class `estresTests` {
         repeat(cantidadUsuarios){
             var nombre: String
             do {
-                nombre = "Usuario_${Random.nextInt(100000, 999999)}"
+                nombre = "U${Random.nextInt(100000, 999999)}"
             } while(!nombres.add(nombre))
 
             val socket = Socket("127.0.0.1", 2300)
@@ -43,7 +43,7 @@ class `estresTests` {
     }
     @Test
     fun nombreRepetido() {
-        val nombre = "UsuarioPrueba_${Random.nextInt(100000,999999)}"
+        val nombre = "NR${Random.nextInt(100000,999999)}"
         //primer cliente
         val cliente1 = Socket("127.0.0.1", 2300)
         val IN1 =  cliente1.getInputStream().bufferedReader(Charsets.UTF_8)
@@ -73,12 +73,12 @@ class `estresTests` {
 
     @Test
     fun mensajeDemasiadoGrande(){
-        val nombre = "Grandote_${Random.nextInt(100000,999999)}"
+        val nombre = "G${Random.nextInt(100000,999999)}"
         val cliente = Socket("127.0.0.1", 2300)
         val IN = cliente.getInputStream().bufferedReader(Charsets.UTF_8)
         val OUT = cliente.getOutputStream().bufferedWriter(Charsets.UTF_8)
 
-        //identificarse first
+        //identificarse first osea primero osease antes que el segundo osease....
         OUT.write(JsonUtil.json.encodeToString(Identify(username = nombre)))
         OUT.newLine()
         OUT.flush()
@@ -105,9 +105,9 @@ class `estresTests` {
     @Test
     fun listaDeUsuarios() {
         //que se conecten 3 usuarios de prueba
-        val nombre1 = "ListaA_${Random.nextInt(100000,999999)}"
-        val nombre2 = "ListaB_${Random.nextInt(100000,999999)}"
-        val nombre3 = "ListaC_${Random.nextInt(100000,999999)}"
+        val nombre1 = "L1${Random.nextInt(100000,999999)}"
+        val nombre2 = "L2${Random.nextInt(100000,999999)}"
+        val nombre3 = "L3${Random.nextInt(100000,999999)}"
 
         val cliente1 = Socket("127.0.0.1", 2300)
         val IN1 = cliente1.getInputStream().bufferedReader(Charsets.UTF_8)
@@ -157,8 +157,8 @@ class `estresTests` {
 
     @Test    //haremos dos uno para el caso que si exita el usuario, y el segundo en caso de que no
     fun mensajePrivadoExitoso(){
-        val nombreA = "PrivA_${Random.nextInt(100000,999999)}"
-        val nombreB = "PrivB_${Random.nextInt(100000,999999)}"
+        val nombreA = "A${Random.nextInt(100000,999999)}"
+        val nombreB = "B${Random.nextInt(100000,999999)}"
 
         val clienteA = Socket("127.0.0.1", 2300)
         val INa = clienteA.getInputStream().bufferedReader(Charsets.UTF_8)
@@ -192,8 +192,8 @@ class `estresTests` {
 
     @Test
     fun mensajePrivadoAUsuarioInexistente(){
-        val nombreA = "PrivC_${Random.nextInt(100000,999999)}"
-        val destinoFalso = "NoExiste_${Random.nextInt(100000,999999)}"
+        val nombreA = "PC${Random.nextInt(100000,999999)}"
+        val destinoFalso = "NE${Random.nextInt(100000,999999)}"
 
         val clienteA = Socket("127.0.0.1", 2300)
         val INa = clienteA.getInputStream().bufferedReader(Charsets.UTF_8)
