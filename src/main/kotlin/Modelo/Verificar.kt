@@ -1,12 +1,16 @@
+package Modelo
+
+import kotlin.collections.iterator
+
 class Verificar {
-    private val usuarios = mutableMapOf<String, ServidorHilo>()
+    private val usuarios = mutableMapOf<String, UsuarioConectado>()
 
     @Synchronized
-    fun agregarUsuario(nombre: String, hilo: ServidorHilo){
+    fun agregarUsuario(nombre: String, usuario: UsuarioConectado){
         if(usuarios.containsKey(nombre)){
             throw Exception("El nombre '$nombre' ya esta en uso.")
         }
-        usuarios[nombre] = hilo
+        usuarios[nombre] = usuario
     }
 
     @Synchronized
@@ -17,7 +21,7 @@ class Verificar {
     }
 
     @Synchronized
-    fun enviarMensajeExcepto(mensaje: String, excepto:ServidorHilo){
+    fun enviarMensajeExcepto(mensaje: String, excepto: UsuarioConectado){
         for(usuario in usuarios.values){
             if(usuario != excepto){
                 usuario.enviarMensaje(mensaje)
@@ -33,16 +37,16 @@ class Verificar {
     @Synchronized
     fun obtenerListaUsuarios(): Map<String, String>{
         val lista = mutableMapOf<String, String>()
-        for((nombre, hilo) in usuarios){
-            lista[nombre] = hilo.getEstado()
+        for((nombre, usuario) in usuarios){
+            lista[nombre] = usuario.obtenerEstado()
         }
         return lista
     }
 
     @Synchronized
-    fun enviarMnesajeAUsuario(nombreDestino: String, mensaje: String): Boolean{
-        val hiloDestino = usuarios[nombreDestino] ?: return false
-        hiloDestino.enviarMensaje(mensaje)
+    fun enviarMensajeAUsuario(nombreDestino: String, mensaje: String): Boolean{
+        val usuarioDestino = usuarios[nombreDestino] ?: return false
+        usuarioDestino.enviarMensaje(mensaje)
         return true
     }
 }

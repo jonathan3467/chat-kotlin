@@ -1,3 +1,5 @@
+package Modelo
+
 import kotlinx.serialization.Serializable
 
 @Serializable

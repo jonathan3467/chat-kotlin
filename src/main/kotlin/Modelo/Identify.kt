@@ -1,7 +1,9 @@
+package Modelo
+
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class NewUser(
-    val type: String = "NEW_USER",
+data class Identify(
+    val type: String = "IDENTIFY",
     val username: String
 )

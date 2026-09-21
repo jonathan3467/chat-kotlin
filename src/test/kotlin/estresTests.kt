@@ -1,3 +1,12 @@
+import Modelo.Identify
+import Modelo.JsonUtil
+import Modelo.PublicText
+import Modelo.Response
+import Modelo.Status
+import Modelo.Text
+import Modelo.TextFrom
+import Modelo.UserList
+import Modelo.Users
 import org.junit.jupiter.api.Test
 import java.net.Socket
 import kotlin.random.Random
@@ -114,14 +123,14 @@ class `estresTests` {
         val OUT1 = cliente1.getOutputStream().bufferedWriter(Charsets.UTF_8)
         OUT1.write(JsonUtil.json.encodeToString(Identify(username = nombre1)))
         OUT1.newLine(); OUT1.flush()
-        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN1.readLine()).result)
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(IN1.readLine()).result)
 
         val cliente2 = Socket("127.0.0.1", 2300)
         val IN2 = cliente2.getInputStream().bufferedReader(Charsets.UTF_8)
         val OUT2 = cliente2.getOutputStream().bufferedWriter(Charsets.UTF_8)
         OUT2.write(JsonUtil.json.encodeToString(Identify(username = nombre2)))
         OUT2.newLine(); OUT2.flush()
-        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN2.readLine()).result)
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(IN2.readLine()).result)
         IN1.readLine() // el cliente 1 recibe el NEW_USER de cliente2 el cual lo ignoramos aqui
 
         val cliente3 = Socket("127.0.0.1", 2300)
@@ -129,7 +138,7 @@ class `estresTests` {
         val OUT3 = cliente3.getOutputStream().bufferedWriter(Charsets.UTF_8)
         OUT3.write(JsonUtil.json.encodeToString(Identify(username = nombre3)))
         OUT3.newLine(); OUT3.flush()
-        assertEquals("SUCCESS",JsonUtil.json.decodeFromString<Response>(IN3.readLine()).result)
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(IN3.readLine()).result)
         IN1.readLine() //cliente1 recibe el NEW_USER de cliente3
         IN2.readLine() //cliente 2 recibe NEW_USER de cliente3
 

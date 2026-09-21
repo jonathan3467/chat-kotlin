@@ -1,3 +1,19 @@
+package Controlador
+
+import Modelo.Disconnected
+import Modelo.Identify
+import Modelo.JsonUtil
+import Modelo.NewStatus
+import Modelo.NewUser
+import Modelo.PublicText
+import Modelo.PublicTextFrom
+import Modelo.Response
+import Modelo.Status
+import Modelo.Text
+import Modelo.TextFrom
+import Modelo.UserList
+import Modelo.UsuarioConectado
+import Modelo.Verificar
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import java.io.BufferedReader
@@ -8,7 +24,8 @@ class ServidorHilo(
     private val socket: Socket,
     private val IN: BufferedReader,
     private val OUT: BufferedWriter,
-    private val verificar: Verificar) : Thread() {
+    private val verificar: Verificar
+) : Thread(), UsuarioConectado {
     private var nombreCliente = ""
     private var identificado = false
     private var estado = "ACTIVE"
@@ -25,11 +42,12 @@ class ServidorHilo(
                 return
             }
             println("<<<<< $mensaje")
-            val identify = JsonUtil.json.decodeFromString<Identify>(mensaje)
-            val nombreSolicitado = identify.username
+            val identify = try{
+                JsonUtil.json.decodeFromString<Identify>(mensaje)
+            } catch (e: Exception) {null}
 
             //checamos si su nombre no se pasa de 8 caracteres
-            if (nombreSolicitado.length > 8){
+            if (identify == null || identify.username.length > 8){
                 val invalido = Response(operation = "INVALID", result = "INVALID")
                 val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
                 println(">>>>>>> $mensajeInvalido")
@@ -37,7 +55,7 @@ class ServidorHilo(
                 socket.close()
                 return
             }
-
+            val nombreSolicitado = identify.username
             try {
                 verificar.agregarUsuario(nombreSolicitado, this)
             } catch (e: Exception) {
@@ -135,9 +153,10 @@ class ServidorHilo(
                         val textFrom = TextFrom(username = nombreCliente, text = textMsg.text)
                         val mensajeTextFrom = JsonUtil.json.encodeToString(textFrom)
 
-                        val existe = verificar.enviarMnesajeAUsuario(textMsg.username, mensajeTextFrom)
+                        val existe = verificar.enviarMensajeAUsuario(textMsg.username, mensajeTextFrom)
                         if(!existe){
-                            val respuesta = Response(operation = "TEXT", result = "NO_SUCH_USER", extra = textMsg.username)
+                            val respuesta =
+                                Response(operation = "TEXT", result = "NO_SUCH_USER", extra = textMsg.username)
                             val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
                             println(">>>>>>> $mensajeRespuesta")
                             enviarMensaje(mensajeRespuesta)
@@ -163,7 +182,7 @@ class ServidorHilo(
         }
     }
 
-    fun enviarMensaje(mensaje: String){
+    override fun enviarMensaje(mensaje: String){
         try {
             OUT.write(mensaje)
             OUT.newLine()
@@ -174,7 +193,7 @@ class ServidorHilo(
         }
     }
 
-    fun getEstado(): String {
+    override fun obtenerEstado(): String {
         return estado
     }
 }
