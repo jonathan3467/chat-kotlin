@@ -1,7 +1,18 @@
 import Modelo.Identify
+import Modelo.Invitation
+import Modelo.Invite
+import Modelo.JoinRoom
+import Modelo.JoinedRoom
 import Modelo.JsonUtil
+import Modelo.LeaveRoom
+import Modelo.LeftRoom
+import Modelo.NewRoom
 import Modelo.PublicText
 import Modelo.Response
+import Modelo.RoomText
+import Modelo.RoomTextFrom
+import Modelo.RoomUserList
+import Modelo.RoomUsers
 import Modelo.Status
 import Modelo.Text
 import Modelo.TextFrom
@@ -223,5 +234,82 @@ class `estresTests` {
         assertEquals("NO_SUCH_USER", respuesta.result)
         assertEquals(destinoFalso, respuesta.extra)
         clienteA.close()
+    }
+
+    @Test
+    fun Salas(){
+        val nombreA = "SA${Random.nextInt(1000,9999)}"
+        val nombreB = "SA${Random.nextInt(1000,9999)}"
+        val sala = "R${Random.nextInt(1000,9999)}"
+
+        val clienteA = Socket("127.0.0.1", 2300)
+        val INa = clienteA.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUTa = clienteA.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUTa.write(JsonUtil.json.encodeToString(Identify(username = nombreA))); OUTa.newLine(); OUTa.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INa.readLine()).result)
+
+        val clienteB = Socket("127.0.0.1", 2300)
+        val INb = clienteB.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUTb = clienteB.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUTb.write(JsonUtil.json.encodeToString(Identify(username = nombreB))); OUTb.newLine(); OUTb.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INb.readLine()).result)
+        INa.readLine() // A recibe NEW_USER de B
+
+        //A crea sala
+        OUTa.write(JsonUtil.json.encodeToString(NewRoom(roomname = sala))); OUTa.newLine(); OUTa.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INa.readLine()).result)
+
+        //A invita a B
+        OUTa.write(JsonUtil.json.encodeToString(Invite(roomname = sala, usernames = listOf(nombreB)))); OUTa.newLine(); OUTa.flush()
+        val invitacion = JsonUtil.json.decodeFromString<Invitation>(INb.readLine())
+        assertEquals(nombreA, invitacion.username)
+
+        //B se une
+        OUTb.write(JsonUtil.json.encodeToString(JoinRoom(roomname = sala))); OUTb.newLine(); OUTb.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(INb.readLine()).result)
+        val joined = JsonUtil.json.decodeFromString<JoinedRoom>(INa.readLine())
+        assertEquals(nombreB, joined.username)
+
+        //A pide la lista de usuarios de la salecion es como sala pero mejor
+        OUTa.write(JsonUtil.json.encodeToString(RoomUsers(roomname = sala))); OUTa.newLine(); OUTa.flush()
+        val lista = JsonUtil.json.decodeFromString<RoomUserList>(INa.readLine())
+        assertEquals(2, lista.users.size)
+        assertEquals("ACTIVE", lista.users[nombreB])
+
+        //A manda texto a la sala
+        OUTa.write(JsonUtil.json.encodeToString(RoomText(roomname = sala, text = "hola sala"))); OUTa.newLine(); OUTa.flush()
+        val texto = JsonUtil.json.decodeFromString<RoomTextFrom>(INb.readLine())
+        assertEquals("hola sala", texto.text)
+
+        //B sale de la sala y A lo wacha
+        OUTb.write(JsonUtil.json.encodeToString(LeaveRoom(roomname = sala))); OUTb.newLine(); OUTb.flush()
+        val left = JsonUtil.json.decodeFromString<LeftRoom>(INa.readLine())
+        assertEquals(nombreB, left.username)
+        clienteA.close()
+        clienteB.close()
+    }
+
+    @Test
+    fun erroresDeSalas(){
+        val nombre = "ER${Random.nextInt(1000,9999)}"
+        val cliente = Socket("127.0.0.1", 2300)
+        val IN = cliente.getInputStream().bufferedReader(Charsets.UTF_8)
+        val OUT = cliente.getOutputStream().bufferedWriter(Charsets.UTF_8)
+        OUT.write(JsonUtil.json.encodeToString(Identify(username = nombre))); OUT.newLine(); OUT.flush()
+        assertEquals("SUCCESS", JsonUtil.json.decodeFromString<Response>(IN.readLine()).result)
+
+        //unirse a una sala que no existe
+        OUT.write(JsonUtil.json.encodeToString(JoinRoom(roomname = "NoExiste"))); OUT.newLine(); OUT.flush()
+        val r1 = JsonUtil.json.decodeFromString<Response>(IN.readLine())
+        assertEquals("NO_SUCH_ROOM", r1.result)
+
+        //crear sala y unirse sin ser invitado
+        OUT.write(JsonUtil.json.encodeToString(NewRoom(roomname = "SolaR"))); OUT.newLine(); OUT.flush()
+        IN.readLine()
+
+        OUT.write(JsonUtil.json.encodeToString(RoomUsers(roomname = "NoExiste"))); OUT.newLine(); OUT.flush()
+        val r2 = JsonUtil.json.decodeFromString<Response>(IN.readLine())
+        assertEquals("NO_SUCH_ROOM", r2.result)
+        cliente.close()
     }
 }

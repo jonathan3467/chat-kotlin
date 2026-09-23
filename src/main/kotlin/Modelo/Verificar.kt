@@ -49,4 +49,7 @@ class Verificar {
         usuarioDestino.enviarMensaje(mensaje)
         return true
     }
+
+    @Synchronized
+    fun obtenerUsuarioConectado(nombre: String): UsuarioConectado? = usuarios[nombre]
 }

@@ -1,11 +1,16 @@
 package Controlador
 
 import Modelo.Disconnected
+import Modelo.Invitation
+import Modelo.JoinedRoom
 import Modelo.JsonUtil
+import Modelo.LeftRoom
 import Modelo.NewStatus
 import Modelo.NewUser
 import Modelo.PublicTextFrom
 import Modelo.Response
+import Modelo.RoomTextFrom
+import Modelo.RoomUserList
 import Modelo.TextFrom
 import Modelo.UserList
 import Vista.VistaCliente
@@ -35,11 +40,49 @@ class ClienteHilo(
             when(tipo){
                 "RESPONSE" -> {
                     val respuesta = JsonUtil.json.decodeFromString<Response>(mensaje)
-                    when(respuesta.result){
-                        "SUCCESS" -> vista.mostrarConexionExitosa()
-                        "USER_ALREADY_EXISTS" -> vista.mostrarNombreEnUso(respuesta.extra ?: "")
+                    when(respuesta.operation){
+                        "IDENTIFY" -> when (respuesta.result){
+                            "SUCCESS" -> vista.mostrarConexionExitosa()
+                            "USER_ALREADY_EXISTS" -> vista.mostrarNombreEnUso(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                    }
+                        "NEW_ROOM" -> when (respuesta.result){
+                            "SUCCESS" -> vista.mostrarSalaCreada(respuesta.extra ?: "")
+                            "ROOM_ALREADY_EXISTS" -> vista.mostrarSalaEnUso(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "TEXT" -> when (respuesta.result){
+                            "NO_SUCH_USER" -> vista.mostrarUsuarioInexistente(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "INVITE" -> when(respuesta.result){
+                            "NO_SUCH_ROOM" -> vista.mostrarSalaInexistente(respuesta.extra ?: "")
+                            "NOT_JOINED" -> vista.mostrarNoPerteneceSala(respuesta.extra ?: "")
+                            "NO_SUCH_USER" -> vista.mostrarUsuarioInexistente(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "JOIN_ROOM" -> when(respuesta.result){
+                            "SUCCESS" -> vista.mostrarUnionExitosaSala(respuesta.extra ?: "")
+                            "NO_SUCH_ROOM" -> vista.mostrarSalaInexistente(respuesta.extra ?: "")
+                            "NOT_INVITED" -> vista.mostrarNoInvitadoSala(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "ROOM_USERS" -> when (respuesta.result){
+                            "NO_SUCH_ROOM" -> vista.mostrarSalaInexistente(respuesta.extra ?: "")
+                            "NOT_JOINED" -> vista.mostrarNoPerteneceSala(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "ROOM_TEXT" -> when (respuesta.result){
+                            "NO_SUCH_ROOM" -> vista.mostrarSalaInexistente(respuesta.extra ?: "")
+                            "NOT_JOINED" -> vista.mostrarNoPerteneceSala(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
+                        "LEAVE_ROOM" -> when (respuesta.result) {
+                            "NO_SUCH_ROOM" -> vista.mostrarSalaInexistente(respuesta.extra ?: "")
+                            "NOT_JOINED" -> vista.mostrarNoPerteneceSala(respuesta.extra ?: "")
+                            else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
+                        }
                         "INVALID" -> vista.mostrarMensajeInvalido()
-                        "NO_SUCH_USER" -> vista.mostrarUsuarioInexistente(respuesta.extra ?: "")
                         else -> vista.mostrarRespuestaGenerica(respuesta.operation, respuesta.result)
                     }
                 }
@@ -66,6 +109,26 @@ class ClienteHilo(
                 "USER_LIST" -> {
                     val userList = JsonUtil.json.decodeFromString<UserList>(mensaje)
                     vista.mostrarListaUsuarios(userList.users)
+                }
+                "INVITATION" -> {
+                    val msg = JsonUtil.json.decodeFromString<Invitation>(mensaje)
+                    vista.mostrarInvitacion(msg.username, msg.roomname)
+                }
+                "JOINED_ROOM" -> {
+                    val msg = JsonUtil.json.decodeFromString<JoinedRoom>(mensaje)
+                    vista.mostrarUsuarioUnidoASala(msg.roomname, msg.username)
+                }
+                "ROOM_USER_LIST" -> {
+                    val msg = JsonUtil.json.decodeFromString<RoomUserList>(mensaje)
+                    vista.mostrarUsuariosSala(msg.roomname, msg.users)
+                }
+                "ROOM_TEXT_FROM" -> {
+                    val msg = JsonUtil.json.decodeFromString<RoomTextFrom>(mensaje)
+                    vista.mostrarMensajeSala(msg.roomname, msg.username, msg.text)
+                }
+                "LEFT_ROOM" -> {
+                    val msg = JsonUtil.json.decodeFromString<LeftRoom>(mensaje)
+                    vista.mostrarUsuarioSalioSala(msg.roomname, msg.username)
                 }
                 else -> {
                     vista.mostrarMensajeDesconocido()

@@ -2,12 +2,24 @@ package Controlador
 
 import Modelo.Disconnected
 import Modelo.Identify
+import Modelo.Invitation
+import Modelo.Invite
+import Modelo.JoinRoom
+import Modelo.JoinedRoom
 import Modelo.JsonUtil
+import Modelo.LeaveRoom
+import Modelo.LeftRoom
+import Modelo.NewRoom
 import Modelo.NewStatus
 import Modelo.NewUser
 import Modelo.PublicText
 import Modelo.PublicTextFrom
 import Modelo.Response
+import Modelo.RoomText
+import Modelo.RoomTextFrom
+import Modelo.RoomUserList
+import Modelo.RoomUsers
+import Modelo.Salas
 import Modelo.Status
 import Modelo.Text
 import Modelo.TextFrom
@@ -24,11 +36,14 @@ class ServidorHilo(
     private val socket: Socket,
     private val IN: BufferedReader,
     private val OUT: BufferedWriter,
-    private val verificar: Verificar
+    private val verificar: Verificar,
+    private val salas: Salas
 ) : Thread(), UsuarioConectado {
+
     private var nombreCliente = ""
     private var identificado = false
     private var estado = "ACTIVE"
+    private val salasUnidas = mutableSetOf<String>()
     // esto es como el static en java, para evitar crear uno para cada
     companion object{
         const val TAMANO_MAXIMO = 1024 * 1024
@@ -164,6 +179,205 @@ class ServidorHilo(
                             println(">>>>>> $mensajeTextFrom")
                         }
                     }
+
+                    "NEW_ROOM" -> {
+                        val newRoom = try {
+                            JsonUtil.json.decodeFromString<NewRoom>(mensajeRecibido)
+                        } catch (e: Exception){null}
+
+                        if (newRoom == null || newRoom.roomname.length > 16){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                        } else{
+                            try {
+                                salas.crearSala(newRoom.roomname, nombreCliente, this)
+                                val respuesta = Response(operation = "NEW_ROOM", result = "SUCCESS", extra = newRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } catch (e: Exception){
+                                val respuesta = Response(operation = "NEW_ROOM", result = "ROOM_ALREADY_EXISTS", extra = newRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            }
+                        }
+                    }
+
+                    "INVITE" -> {
+                        val invite = try {
+                            JsonUtil.json.decodeFromString<Invite>(mensajeRecibido)
+                        } catch (e: Exception) { null }
+                        if (invite == null){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                        } else{
+                            val sala = salas.obtenerSala(invite.roomname)
+                            if (sala == null){
+                                val respuesta = Response(operation = "INVITE", result = "NO_SUCH_ROOM", extra = invite.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else if (!sala.contieneUsuario(nombreCliente)){
+                                val respuesta = Response(operation = "INVITE", result = "NOT_JOINED", extra = invite.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else{
+                                //checamos si los usuarios si existen
+                                val faltante = invite.usernames.firstOrNull{verificar.obtenerUsuarioConectado(it) == null}
+                                if (faltante != null){
+                                    val respuesta = Response(operation = "INVITE", result = "NO_SUCH_USER", extra = faltante)
+                                    val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                    println(">>>>>>>> $mensajeRespuesta")
+                                    enviarMensaje(mensajeRespuesta)
+                                } else{
+                                    //todos existen, entonces invitamos a los que no sean miembros o ya los hayamos invitado
+                                    for (nombreInvitado in invite.usernames){
+                                        if (!sala.yaEsMiembroOInvitado(nombreInvitado)){
+                                            sala.agregarInvitado(nombreInvitado)
+                                            val usuarioDestino = verificar.obtenerUsuarioConectado(nombreInvitado)
+                                            val invitation = Invitation(username = nombreCliente, roomname = invite.roomname)
+                                            val mensajeInvitation = JsonUtil.json.encodeToString(invitation)
+                                            println(">>>>>>> $mensajeInvitation")
+                                            usuarioDestino?.enviarMensaje(mensajeInvitation)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    "JOIN_ROOM" -> {
+                        val joinRoom = try {
+                            JsonUtil.json.decodeFromString<JoinRoom>(mensajeRecibido)
+                        } catch (e: Exception) {null}
+                        if (joinRoom == null){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                        } else {
+                            val sala = salas.obtenerSala(joinRoom.roomname)
+                            if (sala == null){
+                                val respuesta = Response(operation = "JOIN_ROOM", result = "NO_SUCH_ROOM", extra = joinRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else if (!sala.estaInvitado(nombreCliente)){
+                                val respuesta = Response(operation = "JOIN_ROOM", result = "NOT_INVITED", extra = joinRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else{
+                                sala.agregarUsuario(nombreCliente, this)
+                                salasUnidas.add(joinRoom.roomname)
+                                val respuesta = Response(operation = "JOIN_ROOM", result = "SUCCESS", extra = joinRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+
+                                val joinedRoom = JoinedRoom(roomname = joinRoom.roomname, username = nombreCliente)
+                                val mensajeJoinedRoom = JsonUtil.json.encodeToString(joinedRoom)
+                                println(">>>>>>> $mensajeJoinedRoom")
+                                sala.enviarMensajeExcepto(mensajeJoinedRoom, this)
+                            }
+                        }
+                    }
+
+                    "ROOM_USERS"-> {
+                        val roomUsers = try {
+                            JsonUtil.json.decodeFromString<RoomUsers>(mensajeRecibido)
+                        } catch (e: Exception) {null}
+
+                        if (roomUsers == null){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                        } else {
+                            val sala = salas.obtenerSala(roomUsers.roomname)
+                            if (sala == null){
+                                val respuesta = Response(operation = "ROOM_USERS", result = "NO_SUCH_ROOM", extra = roomUsers.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else if (!sala.contieneUsuario(nombreCliente)){
+                                val respuesta = Response(operation = "ROOM_USERS", result = "NOT_JOINED", extra = roomUsers.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else{
+                                val roomUserList = RoomUserList(roomname = roomUsers.roomname, users = sala.obtenerUsuarios())
+                                val mensajeRoomUserList = JsonUtil.json.encodeToString(roomUserList)
+                                println(">>>>>>>> $mensajeRoomUserList")
+                                enviarMensaje(mensajeRoomUserList)
+                            }
+                        }
+                    }
+                    "ROOM_TEXT" -> {
+                        val roomText = try {
+                            JsonUtil.json.decodeFromString<RoomText>(mensajeRecibido)
+                        } catch (e: Exception) {null}
+
+                        if(roomText == null){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                         } else {
+                             val sala = salas.obtenerSala(roomText.roomname)
+                            if (sala == null){
+                                val respuesta = Response(operation = "ROOM_TEXT", result = "NO_SUCH_ROOM", extra = roomText.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else if (!sala.contieneUsuario(nombreCliente)){
+                                val respuesta = Response(operation = "ROOM_TEXT", result = "NOT_JOINED", extra = roomText.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else{
+                                val roomTextFrom = RoomTextFrom(roomname = roomText.roomname, username = nombreCliente, text = roomText.text)
+                                val mensajeRoomTextFrom = JsonUtil.json.encodeToString(roomTextFrom)
+                                println(">>>>>>>>> $mensajeRoomTextFrom")
+                                sala.enviarMensajeExcepto(mensajeRoomTextFrom, this)
+                            }
+                        }
+                    }
+
+                    "LEAVE_ROOM" -> {
+                        val leaveRoom = try {
+                            JsonUtil.json.decodeFromString<LeaveRoom>(mensajeRecibido)
+                        } catch (e: Exception) {null}
+
+                        if (leaveRoom == null){
+                            val invalido = Response(operation = "INVALID", result = "INVALID")
+                            val mensajeInvalido = JsonUtil.json.encodeToString(invalido)
+                            println(">>>>>>>>> $mensajeInvalido")
+                            enviarMensaje(mensajeInvalido)
+                        } else{
+                            val sala = salas.obtenerSala((leaveRoom.roomname))
+                            if (sala == null){
+                                val respuesta = Response(operation = "LEAVE_ROOM", result = "NO_SUCH_ROOM", extra = leaveRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else if (!sala.contieneUsuario(nombreCliente)){
+                                val respuesta = Response(operation = "LEAVE_ROOM", result = "NOT_JOINED", extra = leaveRoom.roomname)
+                                val mensajeRespuesta = JsonUtil.json.encodeToString(respuesta)
+                                println(">>>>>>> $mensajeRespuesta")
+                                enviarMensaje(mensajeRespuesta)
+                            } else{
+                                salirDeSala(leaveRoom.roomname)
+                            }
+                        }
+                    }
+
                     else -> {
                         println("Mensaje desconocido: $tipo")
                     }
@@ -172,6 +386,11 @@ class ServidorHilo(
             }
         } finally {
             if (identificado) {
+                if (identificado){
+                    for (nombreSala in salasUnidas.toList()){
+                        salirDeSala(nombreSala)
+                    }
+                }
                 verificar.eliminaUsuario(nombreCliente)
                 val desconectado = Disconnected(username = nombreCliente)
                 val mensajeAEnviar = JsonUtil.json.encodeToString(desconectado)
@@ -191,6 +410,17 @@ class ServidorHilo(
             // el socket del cliente ya no existe y
         // lo ignoramos silenciosamente sin ningun error de tuberia rota
         }
+    }
+
+    private fun salirDeSala(nombreSala: String){
+        val sala = salas.obtenerSala(nombreSala) ?: return
+        sala.eliminarUsuario(nombreCliente)
+        val leftRoom = LeftRoom(roomname = nombreSala, username = nombreCliente)
+        val mensajeLeftRoom = JsonUtil.json.encodeToString(leftRoom)
+        println(">>>>>>>> $mensajeLeftRoom")
+        sala.enviarMensajeExcepto(mensajeLeftRoom, this)
+        salas.eliminarSalaSiVacia(nombreSala)
+        salasUnidas.remove(nombreSala)
     }
 
     override fun obtenerEstado(): String {
