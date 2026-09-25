@@ -37,6 +37,20 @@ class VistaCliente {
         print("Indica tu nombre: ")
         return readLine()?.trim() ?: ""
     }
+    fun pedirIp(): String{
+        print("IP del servidor (Enter para 127.0.0.1): ")
+        val entrada = readLine()?.trim()
+        return if (entrada.isNullOrEmpty()) "127.0.0.1" else entrada
+    }
+    fun pedirPuerto(): Int {
+        print("Puero del servidor (Eneter para 2300): ")
+        val entrada = readLine()?.trim()
+        if (entrada.isNullOrEmpty()) return 2300
+        return entrada.toIntOrNull() ?: run {
+            println("Puerto invalido, usando 2300 por defecto")
+            2300
+        }
+    }
     fun mostrarSalaCreada(nombreSala: String) {
         val color = colorParaSala(nombreSala)
         println("${color}Sala `$nombreSala` creada exitosamente$RESET")

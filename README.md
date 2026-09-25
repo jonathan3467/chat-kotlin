@@ -34,3 +34,19 @@ $ mvn compile exec:java -Dexec.mainClass="ClienteKt"
 ```
 
 Se pueden abrir tantas terminales como clientes se quieran conectar simultaneamente
+
+### Comandos del cliente
+
+Una vez conectado, cualquier texto que no sea un comando se manda como
+mensaje público. Los comandos disponibles son:
+
+- `<usuarios>` — pide la lista de usuarios conectados.
+- `<estado> ESTADO` — cambia tu estado (`ACTIVE`, `AWAY` o `BUSY`).
+- `<privado> usuario mensaje` — manda un mensaje privado a ese usuario.
+- `<crear_sala> nombre` — crea una sala nueva.
+- `<invitar> sala usuario1 usuario2 ...` — invita usuarios a una sala.
+- `<unirse> sala` — te unes a una sala a la que fuiste invitado.
+- `<usuarios_sala> sala` — pide la lista de usuarios de una sala.
+- `<sala_texto> sala mensaje` — manda un mensaje a una sala.
+- `<salir_sala> sala` — abandonas una sala.
+- `<desconectar>` — te desconectas del chat.

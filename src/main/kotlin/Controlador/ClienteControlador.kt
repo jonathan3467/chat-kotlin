@@ -156,10 +156,6 @@ class ClienteControlador(
             else -> {
                 enviarTextoPublico(texto)
             }
-
-
-
-
         }
     }
 }

@@ -5,9 +5,11 @@ import java.util.Scanner
 
 fun main(){
     val vista = VistaCliente()
+    val ip = vista.pedirIp()
+    val puerto = vista.pedirPuerto()
     val nombre = vista.pedirNombre()
 
-    val controlador = ClienteControlador(ip = "127.0.0.1", puerto = 2300, vista = vista)
+    val controlador = ClienteControlador(ip = ip, puerto = puerto, vista = vista)
     controlador.identificar(nombre)
 
     val sn = Scanner(System.`in`)

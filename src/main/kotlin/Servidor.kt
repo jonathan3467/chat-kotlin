@@ -5,7 +5,14 @@ import Modelo.Verificar
 import java.net.ServerSocket
 
 fun main() {
-    val puerto = 2300
+    print("Puerto (Enter para 2300): ")
+    val puertoEntrada = readLine()?.trim()
+    val puerto = if (puertoEntrada.isNullOrEmpty()) 2300 else{
+        puertoEntrada.toIntOrNull() ?: run {
+            println("Puerto invalido, usando 2300 por defecto")
+            2300
+        }
+    }
     val sc = ServerSocket(puerto)
     val clientes = Verificar()
     val salas = Salas()
